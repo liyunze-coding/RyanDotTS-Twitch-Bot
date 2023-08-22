@@ -1,4 +1,5 @@
-import ComfyJS from "comfy.js";
+import { default as ComfyJS } from "comfy.js";
+import { ComfyJSInstance } from "comfy.js";
 import axios from "axios";
 import fs from "fs";
 import FormData from "form-data";
@@ -6,6 +7,9 @@ import say from "say";
 import * as dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
+
+// cast to unknown, then cast to ComfyJSInstance ... tsc compiler recommended
+let TypedComfyJS: ComfyJSInstance = <ComfyJSInstance> <unknown> ComfyJS  
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -111,8 +115,8 @@ async function callShoutoutStreamer(username: string) {
 	let userID = await getUsernameId(username);
 	let game = await getLastGame(userID);
 
-	// @ts-ignore
-	ComfyJS.Say(
+	
+	TypedComfyJS.Say(
 		`Hey guys! Please check out @${username}! They were last streaming ${game} at https://twitch.tv/${username}!`
 	);
 }
@@ -161,8 +165,7 @@ function deleteBroadcasterCommand(command: string) {
 }
 
 // Handle chat commands
-// @ts-ignore
-ComfyJS.onCommand = (
+TypedComfyJS.onCommand = (
 	user: string,
 	command: string,
 	message: string,
@@ -176,8 +179,7 @@ ComfyJS.onCommand = (
 		reply = reply.replace("{user}", `@${user}`);
 		reply = reply.replace("{user2}", `${user2}`);
 
-		// @ts-ignore
-		ComfyJS.Say(reply);
+		TypedComfyJS.Say(reply);
 	}
 	// Check if the command exists in the broadcaster commands object and the user is a broadcaster or mod
 	else if (broadcasterCommands[command] && (flags.broadcaster || flags.mod)) {
@@ -187,8 +189,7 @@ ComfyJS.onCommand = (
 		reply = reply.replace("{user2}", `${user2}`);
 
 		// Send the reply to the chat
-		// @ts-ignore
-		ComfyJS.Say(reply);
+		TypedComfyJS.Say(reply);
 	}
 	// Handle the "time" command
 	else if (command === "time") {
@@ -196,8 +197,7 @@ ComfyJS.onCommand = (
 		let localtime = d.toLocaleTimeString("en-US", { hour12: true });
 
 		// Send the current time to the chat
-		// @ts-ignore
-		ComfyJS.Say(`${user} it is currently ${localtime}`);
+		TypedComfyJS.Say(`${user} it is currently ${localtime}`);
 	}
 	// Handle the "promote" command if the user is a broadcaster
 	else if (command === "promote" && flags.broadcaster) {
@@ -209,8 +209,7 @@ ComfyJS.onCommand = (
 		});
 
 		// Send a confirmation message to the chat
-		// @ts-ignore
-		ComfyJS.Say(`${user} promotion successful!`);
+		TypedComfyJS.Say(`${user} promotion successful!`);
 	}
 	// Handle the "compliment" command
 	else if (command === "compliment") {
@@ -225,16 +224,14 @@ ComfyJS.onCommand = (
 			compliments[Math.floor(Math.random() * compliments.length)];
 
 		// Send a random compliment to the chat
-		// @ts-ignore
-		ComfyJS.Say(`${compliment_user} ${random_compliment}`);
+		TypedComfyJS.Say(`${compliment_user} ${random_compliment}`);
 	}
 	// Handle the "quote" command
 	else if (command === "quote") {
 		let random_quote = quotes[Math.floor(Math.random() * quotes.length)];
 
 		// Send a random quote to the chat
-		// @ts-ignore
-		ComfyJS.Say(`${random_quote}`);
+		TypedComfyJS.Say(`${random_quote}`);
 	}
 	// Handle the "so" command if the user is a broadcaster or mod
 	else if (command === "so" && (flags.broadcaster || flags.mod)) {
@@ -262,8 +259,7 @@ ComfyJS.onCommand = (
 		// if command already exists, return
 		if (commands[command_to_add]) {
 			// Send a confirmation message to the chat
-			// @ts-ignore
-			ComfyJS.Say(
+			TypedComfyJS.Say(
 				`${user} command '${command_to_add}' already exists! Please use the edit command instead.`
 			);
 			return;
@@ -273,8 +269,7 @@ ComfyJS.onCommand = (
 		addCommand(command_to_add, reply);
 
 		// Send a confirmation message to the chat
-		// @ts-ignore
-		ComfyJS.Say(`${user} command '${command_to_add}' added successfully!`);
+		TypedComfyJS.Say(`${user} command '${command_to_add}' added successfully!`);
 	}
 	// Handle the "editcommand" command if the user is a broadcaster
 	else if (
@@ -294,8 +289,7 @@ ComfyJS.onCommand = (
 		// if command doesn't exist, return
 		if (!commands[command_to_edit]) {
 			// Send a confirmation message to the chat
-			// @ts-ignore
-			ComfyJS.Say(
+			TypedComfyJS.Say(
 				`${user} command '${command_to_edit}' doesn't exist! Please use the add command instead.`
 			);
 			return;
@@ -305,8 +299,7 @@ ComfyJS.onCommand = (
 		editCommand(command_to_edit, reply);
 
 		// Send a confirmation message to the chat
-		// @ts-ignore
-		ComfyJS.Say(
+		TypedComfyJS.Say(
 			`${user} command '${command_to_edit}' edited successfully!`
 		);
 	}
@@ -327,8 +320,7 @@ ComfyJS.onCommand = (
 		// if command doesn't exist, return
 		if (!commands[command_to_delete]) {
 			// Send a confirmation message to the chat
-			// @ts-ignore
-			ComfyJS.Say(
+			TypedComfyJS.Say(
 				`${user} command '${command_to_delete}' doesn't exist!`
 			);
 			return;
@@ -338,8 +330,7 @@ ComfyJS.onCommand = (
 		deleteCommand(command_to_delete);
 
 		// Send a confirmation message to the chat
-		// @ts-ignore
-		ComfyJS.Say(
+		TypedComfyJS.Say(
 			`${user} command '${command_to_delete}' deleted successfully!`
 		);
 	}
@@ -364,8 +355,7 @@ ComfyJS.onCommand = (
 		addBroadcasterCommand(command_to_add, reply);
 
 		// Send a confirmation message to the chat
-		// @ts-ignore
-		ComfyJS.Say(
+		TypedComfyJS.Say(
 			`${user} broadcaster command '${command_to_add}' added successfully!`
 		);
 	}
@@ -390,8 +380,7 @@ ComfyJS.onCommand = (
 		editBroadcasterCommand(command_to_edit, reply);
 
 		// Send a confirmation message to the chat
-		// @ts-ignore
-		ComfyJS.Say(
+		TypedComfyJS.Say(
 			`${user} broadcaster command '${command_to_edit}' edited successfully!`
 		);
 	}
@@ -415,8 +404,7 @@ ComfyJS.onCommand = (
 		deleteBroadcasterCommand(command_to_delete);
 
 		// Send a confirmation message to the chat
-		// @ts-ignore
-		ComfyJS.Say(
+		TypedComfyJS.Say(
 			`${user} broadcaster command '${command_to_delete}' deleted successfully!`
 		);
 	}
@@ -435,17 +423,14 @@ function activateTimerMessages() {
 			compliments[Math.floor(Math.random() * compliments.length)];
 
 		// Send a random compliment to the chat
-		// @ts-ignore
-		ComfyJS.Say(`@${user} ${random_compliment}`);
+		TypedComfyJS.Say(`@${user} ${random_compliment}`);
 	} else if (autoresponder === "quote") {
 		let random_quote = quotes[Math.floor(Math.random() * quotes.length)];
 
 		// Send a random quote to the chat
-		// @ts-ignore
-		ComfyJS.Say(`${random_quote}`);
+		TypedComfyJS.Say(`${random_quote}`);
 	} else if (autoresponder === "timer") {
-		// @ts-ignore
-		ComfyJS.Say(
+		TypedComfyJS.Say(
 			`Hey guys! I'm going to take a quick break, I'll be back in 5 minutes!`
 		);
 	}
@@ -456,8 +441,7 @@ let lastMessageTimestamp: number = Date.now();
 let timeLimit = 5 * 60 * 1000; // 5 minutes
 let messageLimit = 20;
 
-// @ts-ignore
-ComfyJS.onChat = async (
+TypedComfyJS.onChat = async (
 	user: string,
 	message: string,
 	flags: any,
@@ -489,8 +473,7 @@ ComfyJS.onChat = async (
 	}
 };
 
-// @ts-ignore
-ComfyJS.onReward = (
+TypedComfyJS.onReward = (
 	user: string,
 	reward: string,
 	cost: number,
@@ -501,5 +484,4 @@ ComfyJS.onReward = (
 	textToSpeech(`${user} redeemed ${reward}`);
 };
 
-// @ts-ignore
-ComfyJS.Init(BOT_NAME, `oauth:${CLIENT_TOKEN}`, STREAMER);
+TypedComfyJS.Init(BOT_NAME, `oauth:${CLIENT_TOKEN}`, STREAMER);
