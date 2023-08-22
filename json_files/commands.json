@@ -1,0 +1,14 @@
+{
+	"lurk": "Thanks for lurking, {user}!",
+	"unlurk": "Welcome back {user}!",
+	"github": "{user} https://github.com/liyunze-coding",
+	"website": "{user} Check out Ryan's website here: https://ryanpython.me/",
+	"hug": "{user} sends a hug to {user2} <3 <3",
+	"pat": "{user} pats {user2} <3 <3",
+	"bonk": "{user} bonks {user2} >:(",
+	"chancla": "{user} throws a chancla at {user2} >:(",
+	"kabedon": "{user} kabedons {user2} :OO",
+	"intro": "Hey guys! I'm Ryan from Malaysia, I do co-working streams and I am a second-year computer science college student :D",
+	"discord": "{user} Come join the Discord server here! https://discord.gg/UnHyHkhbga",
+	"commands": "{user} Check out my commands here! https://github.com/liyunze-coding/comfy-twitch-bot#readme"
+}
