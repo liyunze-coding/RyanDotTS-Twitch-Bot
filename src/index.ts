@@ -1,5 +1,4 @@
-import { default as ComfyJS } from "comfy.js";
-import { ComfyJSInstance } from "comfy.js";
+import { default as ComfyJS, ComfyJSInstance } from "comfy.js";
 import axios from "axios";
 import fs from "fs";
 import FormData from "form-data";
@@ -8,8 +7,7 @@ import * as dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 
-// cast to unknown, then cast to ComfyJSInstance ... tsc compiler recommended
-let TypedComfyJS: ComfyJSInstance = <ComfyJSInstance> <unknown> ComfyJS  
+const TypedComfyJS: ComfyJSInstance = ComfyJS.default
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
