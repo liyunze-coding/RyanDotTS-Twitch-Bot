@@ -12,23 +12,32 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: __dirname + "/../.env" });
 
-const { CLIENT_ID, CLIENT_TOKEN, WEBHOOK_URL, STREAMER, BOT_NAME } =
+const { CLIENT_ID, CLIENT_TOKEN, WEBHOOK_URL, STREAMER, BOT_NAME, CLIP_URL } =
 	process.env;
 
 // text files
 const compliments: string[] = fs
 	.readFileSync(__dirname + "/../text_files/compliments.txt", "utf8")
+	.replace(/\r/g, "")
 	.split("\n");
 
 const quotes: string[] = fs
 	.readFileSync(__dirname + "/../text_files/quotes.txt", "utf8")
+	.replace(/\r/g, "")
 	.split("\n");
 
+const timerMessages: string[] = fs
+	.readFileSync(__dirname + "/../text_files/timer_messages.txt", "utf8")
+	.replace(/\r/g, "")
+	.split("\n");
+
+// remove \r from file
 const streamers_to_shoutout: string[] = fs
 	.readFileSync(
 		__dirname + "/../text_files/streamers_to_shoutout.txt",
 		"utf8"
 	)
+	.replace(/\r/g, "")
 	.split("\n");
 
 // TTS for streamer to hear redeems, in case they don't have the dashboard open
@@ -107,6 +116,19 @@ function getLastGame(id: string): Promise<string> {
 	});
 }
 
+function getClip(): Promise<string> {
+	return new Promise((resolve, reject) => {
+		axios
+			.get(CLIP_URL!)
+			.then((res) => {
+				resolve(res.data);
+			})
+			.catch((err) => {
+				reject(err);
+			});
+	});
+}
+
 async function callShoutoutStreamer(username: string) {
 	let userID = await getUsernameId(username);
 	let game = await getLastGame(userID);
@@ -162,7 +184,7 @@ function deleteBroadcasterCommand(command: string) {
 
 // Handle chat commands
 // @ts-ignore
-ComfyJS.onCommand = (
+ComfyJS.onCommand = async (
 	user: string,
 	command: string,
 	message: string,
@@ -420,10 +442,17 @@ ComfyJS.onCommand = (
 			`${user} broadcaster command '${command_to_delete}' deleted successfully!`
 		);
 	}
+	// clip command
+	else if (command === "clip" && flags.broadcaster) {
+		let clip = await getClip();
+
+		// @ts-ignore
+		ComfyJS.Say(`@${user} ${clip}`);
+	}
 };
 
 // send a quote, compliment, or timer message
-function activateTimerMessages() {
+function activateTimerMessages(user: string) {
 	// quote, compliment, or timer message
 	let autoresponder =
 		randomAutoResponse[
@@ -431,23 +460,25 @@ function activateTimerMessages() {
 		];
 
 	if (autoresponder === "compliment") {
-		let random_compliment =
+		let randomCompliment =
 			compliments[Math.floor(Math.random() * compliments.length)];
 
 		// Send a random compliment to the chat
 		// @ts-ignore
-		ComfyJS.Say(`@${user} ${random_compliment}`);
+		ComfyJS.Say(`@${user} ${randomCompliment}`);
 	} else if (autoresponder === "quote") {
-		let random_quote = quotes[Math.floor(Math.random() * quotes.length)];
+		let randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
 
 		// Send a random quote to the chat
 		// @ts-ignore
-		ComfyJS.Say(`${random_quote}`);
+		ComfyJS.Say(`${randomQuote}`);
 	} else if (autoresponder === "timer") {
+		let randomTimerMessage =
+			timerMessages[Math.floor(Math.random() * timerMessages.length)];
+
+		// Send a random timer message to the chat
 		// @ts-ignore
-		ComfyJS.Say(
-			`Hey guys! I'm going to take a quick break, I'll be back in 5 minutes!`
-		);
+		ComfyJS.Say(`${randomTimerMessage}`);
 	}
 }
 
@@ -481,7 +512,7 @@ ComfyJS.onChat = async (
 		messageCount >= messageLimit &&
 		Date.now() - lastMessageTimestamp >= timeLimit
 	) {
-		activateTimerMessages();
+		activateTimerMessages(user);
 		messageCount = 0;
 		lastMessageTimestamp = Date.now();
 	} else {
