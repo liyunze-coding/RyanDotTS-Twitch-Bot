@@ -1,4 +1,4 @@
-import ComfyJS, { ComfyJSInstance } from "comfy.js";
+import ComfyJS from "comfy.js";
 import axios from "axios";
 import fs from "fs";
 import FormData from "form-data";
@@ -12,8 +12,12 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: __dirname + "/../.env" });
 
-const { CLIENT_ID, CLIENT_TOKEN, WEBHOOK_URL, STREAMER, BOT_NAME, CLIP_URL } =
-	process.env;
+const CLIENT_ID = process.env.CLIENT_ID ? process.env.CLIENT_ID : "";
+const CLIENT_TOKEN = process.env.CLIENT_TOKEN ? process.env.CLIENT_TOKEN : "";
+const WEBHOOK_URL = process.env.WEBHOOK_URL ? process.env.WEBHOOK_URL : "";
+const STREAMER = process.env.STREAMER ? process.env.STREAMER : "";
+const BOT_NAME = process.env.BOT_NAME ? process.env.BOT_NAME : "";
+const CLIP_URL = process.env.CLIP_URL ? process.env.CLIP_URL : "";
 
 // text files
 const compliments: string[] = fs
@@ -119,7 +123,7 @@ function getLastGame(id: string): Promise<string> {
 function getClip(): Promise<string> {
 	return new Promise((resolve, reject) => {
 		axios
-			.get(CLIP_URL!)
+			.get(CLIP_URL)
 			.then((res) => {
 				resolve(res.data);
 			})
@@ -135,7 +139,7 @@ async function callShoutoutStreamer(username: string) {
 
 	ComfyJS.Say(
 		`Hey guys! Please check out @${username}! They were last streaming ${game} at https://twitch.tv/${username}!`,
-		STREAMER!
+		STREAMER
 	);
 }
 
@@ -197,7 +201,7 @@ ComfyJS.onCommand = async (
 		reply = reply.replace("{user}", `@${user}`);
 		reply = reply.replace("{user2}", `${user2}`);
 
-		ComfyJS.Say(reply, STREAMER!);
+		ComfyJS.Say(reply, STREAMER);
 	}
 	// Check if the command exists in the broadcaster commands object and the user is a broadcaster or mod
 	else if (broadcasterCommands[command] && (flags.broadcaster || flags.mod)) {
@@ -208,7 +212,7 @@ ComfyJS.onCommand = async (
 
 		// Send the reply to the chat
 
-		ComfyJS.Say(reply, STREAMER!);
+		ComfyJS.Say(reply, STREAMER);
 	}
 	// Handle the "time" command
 	else if (command === "time") {
@@ -217,20 +221,20 @@ ComfyJS.onCommand = async (
 
 		// Send the current time to the chat
 
-		ComfyJS.Say(`${user} it is currently ${localtime}`, STREAMER!);
+		ComfyJS.Say(`${user} it is currently ${localtime}`, STREAMER);
 	}
 	// Handle the "promote" command if the user is a broadcaster
 	else if (command === "promote" && flags.broadcaster) {
 		let content_of_promotion = `<@&1038436118816903210> \n# <https://www.twitch.tv/RyanPython>\n${message}`;
 
 		// Send a webhook to promote the channel
-		sendWebHook(WEBHOOK_URL!, {
+		sendWebHook(WEBHOOK_URL, {
 			content: content_of_promotion,
 		});
 
 		// Send a confirmation message to the chat
 
-		ComfyJS.Say(`${user} promotion successful!`, STREAMER!);
+		ComfyJS.Say(`${user} promotion successful!`, STREAMER);
 	}
 	// Handle the "compliment" command
 	else if (command === "compliment") {
@@ -246,7 +250,7 @@ ComfyJS.onCommand = async (
 
 		// Send a random compliment to the chat
 
-		ComfyJS.Say(`${compliment_user} ${random_compliment}`, STREAMER!);
+		ComfyJS.Say(`${compliment_user} ${random_compliment}`, STREAMER);
 	}
 	// Handle the "quote" command
 	else if (command === "quote") {
@@ -254,7 +258,7 @@ ComfyJS.onCommand = async (
 
 		// Send a random quote to the chat
 
-		ComfyJS.Say(`${random_quote}`, STREAMER!);
+		ComfyJS.Say(`${random_quote}`, STREAMER);
 	}
 	// Handle the "so" command if the user is a broadcaster or mod
 	else if (command === "so" && (flags.broadcaster || flags.mod)) {
@@ -285,7 +289,7 @@ ComfyJS.onCommand = async (
 
 			ComfyJS.Say(
 				`${user} command '${command_to_add}' already exists! Please use the edit command instead.`,
-				STREAMER!
+				STREAMER
 			);
 			return;
 		}
@@ -297,7 +301,7 @@ ComfyJS.onCommand = async (
 
 		ComfyJS.Say(
 			`${user} command '${command_to_add}' added successfully!`,
-			STREAMER!
+			STREAMER
 		);
 	}
 	// Handle the "editcommand" command if the user is a broadcaster
@@ -321,7 +325,7 @@ ComfyJS.onCommand = async (
 
 			ComfyJS.Say(
 				`${user} command '${command_to_edit}' doesn't exist! Please use the add command instead.`,
-				STREAMER!
+				STREAMER
 			);
 			return;
 		}
@@ -333,7 +337,7 @@ ComfyJS.onCommand = async (
 
 		ComfyJS.Say(
 			`${user} command '${command_to_edit}' edited successfully!`,
-			STREAMER!
+			STREAMER
 		);
 	}
 	// Handle the "deletecommand" command if the user is a broadcaster
@@ -356,7 +360,7 @@ ComfyJS.onCommand = async (
 
 			ComfyJS.Say(
 				`${user} command '${command_to_delete}' doesn't exist!`,
-				STREAMER!
+				STREAMER
 			);
 			return;
 		}
@@ -368,7 +372,7 @@ ComfyJS.onCommand = async (
 
 		ComfyJS.Say(
 			`${user} command '${command_to_delete}' deleted successfully!`,
-			STREAMER!
+			STREAMER
 		);
 	}
 	// Handle the "addbroadcastercommand" command if the user is a broadcaster
@@ -395,7 +399,7 @@ ComfyJS.onCommand = async (
 
 		ComfyJS.Say(
 			`${user} broadcaster command '${command_to_add}' added successfully!`,
-			STREAMER!
+			STREAMER
 		);
 	}
 	// Handle the "editbroadcastercommand" command if the user is a broadcaster
@@ -422,7 +426,7 @@ ComfyJS.onCommand = async (
 
 		ComfyJS.Say(
 			`${user} broadcaster command '${command_to_edit}' edited successfully!`,
-			STREAMER!
+			STREAMER
 		);
 	}
 	// Handle the "deletebroadcastercommand" command if the user is a broadcaster
@@ -448,14 +452,14 @@ ComfyJS.onCommand = async (
 
 		ComfyJS.Say(
 			`${user} broadcaster command '${command_to_delete}' deleted successfully!`,
-			STREAMER!
+			STREAMER
 		);
 	}
 	// clip command
 	else if (command === "clip" && flags.broadcaster) {
 		let clip = await getClip();
 
-		ComfyJS.Say(`@${user} ${clip}`, STREAMER!);
+		ComfyJS.Say(`@${user} ${clip}`, STREAMER);
 	}
 };
 
@@ -473,20 +477,20 @@ function activateTimerMessages(user: string) {
 
 		// Send a random compliment to the chat
 
-		ComfyJS.Say(`@${user} ${randomCompliment}`, STREAMER!);
+		ComfyJS.Say(`@${user} ${randomCompliment}`, STREAMER);
 	} else if (autoresponder === "quote") {
 		let randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
 
 		// Send a random quote to the chat
 
-		ComfyJS.Say(`${randomQuote}`, STREAMER!);
+		ComfyJS.Say(`${randomQuote}`, STREAMER);
 	} else if (autoresponder === "timer") {
 		let randomTimerMessage =
 			timerMessages[Math.floor(Math.random() * timerMessages.length)];
 
 		// Send a random timer message to the chat
 
-		ComfyJS.Say(`${randomTimerMessage}`, STREAMER!);
+		ComfyJS.Say(`${randomTimerMessage}`, STREAMER);
 	}
 }
 
@@ -538,4 +542,4 @@ ComfyJS.onReward = (
 	textToSpeech(`${user} redeemed ${reward}`);
 };
 
-ComfyJS.Init(BOT_NAME!, `oauth:${CLIENT_TOKEN}`, STREAMER);
+ComfyJS.Init(BOT_NAME, `oauth:${CLIENT_TOKEN}`, STREAMER);
