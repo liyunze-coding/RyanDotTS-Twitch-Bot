@@ -19,6 +19,18 @@ const STREAMER = process.env.STREAMER ? process.env.STREAMER : "";
 const BOT_NAME = process.env.BOT_NAME ? process.env.BOT_NAME : "";
 const CLIP_URL = process.env.CLIP_URL ? process.env.CLIP_URL : "";
 
+const commandList = ["ryancommand", "ryancmd", "rcmd"];
+const broadcasterCommandList = [
+	"broadcastercommand",
+	"bcmd",
+	"mcmd",
+	"modcommand",
+];
+
+const addCommands = ["add"];
+const editCommands = ["edit"];
+const deleteCommands = ["remove", "delete", "del"];
+
 // text files
 const compliments: string[] = fs
 	.readFileSync(__dirname + "/../text_files/compliments.txt", "utf8")
@@ -197,18 +209,18 @@ ComfyJS.onCommand = async (
 	// Check if the command exists in the regular commands object
 	if (commands[command]) {
 		let reply = commands[command];
-		const user2 = message.split(" ")[0];
+		const mention = message.split(" ")[0];
 		reply = reply.replace("{user}", `@${user}`);
-		reply = reply.replace("{user2}", `${user2}`);
+		reply = reply.replace("{mention}", `${mention}`);
 
 		ComfyJS.Say(reply, STREAMER);
 	}
 	// Check if the command exists in the broadcaster commands object and the user is a broadcaster or mod
 	else if (broadcasterCommands[command] && (flags.broadcaster || flags.mod)) {
 		let reply = broadcasterCommands[command];
-		const user2 = message.split(" ")[0];
+		const mention = message.split(" ")[0];
 		reply = reply.replace("{user}", `@${user}`);
-		reply = reply.replace("{user2}", `${user2}`);
+		reply = reply.replace("{mention}", `${mention}`);
 
 		// Send the reply to the chat
 
@@ -270,8 +282,8 @@ ComfyJS.onCommand = async (
 	}
 	// Handle the "addcommand" command if the user is a broadcaster
 	else if (
-		["command", "cmd"].includes(command) &&
-		message.split(" ")[0] === "add" &&
+		commandList.includes(command) &&
+		addCommands.includes(message.split(" ")[0]) &&
 		(flags.broadcaster || flags.moderator)
 	) {
 		// example: !command add !hello Hello, {user}!
@@ -306,8 +318,8 @@ ComfyJS.onCommand = async (
 	}
 	// Handle the "editcommand" command if the user is a broadcaster
 	else if (
-		["command", "cmd"].includes(command) &&
-		message.split(" ")[0] === "edit" &&
+		commandList.includes(command) &&
+		editCommands.includes(message.split(" ")[0]) &&
 		flags.broadcaster
 	) {
 		// example: !command edit !hello Hello, {user}! I'm glad you're here!
@@ -342,8 +354,8 @@ ComfyJS.onCommand = async (
 	}
 	// Handle the "deletecommand" command if the user is a broadcaster
 	else if (
-		["command", "cmd"].includes(command) &&
-		["remove", "delete", "del"].includes(message.split(" ")[0]) &&
+		commandList.includes(command) &&
+		deleteCommands.includes(message.split(" ")[0]) &&
 		flags.broadcaster
 	) {
 		// example: !command delete !hello
@@ -377,10 +389,8 @@ ComfyJS.onCommand = async (
 	}
 	// Handle the "addbroadcastercommand" command if the user is a broadcaster
 	else if (
-		["broadcastercommand", "bcmd", "mcmd", "modcommand"].includes(
-			command
-		) &&
-		message.split(" ")[0] === "add" &&
+		broadcasterCommandList.includes(command) &&
+		addCommands.includes(message.split(" ")[0]) &&
 		flags.broadcaster
 	) {
 		// example: !broadcastercommand add !hello Hello, {user}!
@@ -404,10 +414,8 @@ ComfyJS.onCommand = async (
 	}
 	// Handle the "editbroadcastercommand" command if the user is a broadcaster
 	else if (
-		["broadcastercommand", "bcmd", "mcmd", "modcommand"].includes(
-			command
-		) &&
-		message.split(" ")[0] === "edit" &&
+		broadcasterCommandList.includes(command) &&
+		editCommands.includes(message.split(" ")[0]) &&
 		flags.broadcaster
 	) {
 		// example: !broadcastercommand edit !hello Hello, {user}! I'm glad you're here!
@@ -431,10 +439,8 @@ ComfyJS.onCommand = async (
 	}
 	// Handle the "deletebroadcastercommand" command if the user is a broadcaster
 	else if (
-		["broadcastercommand", "bcmd", "mcmd", "modcommand"].includes(
-			command
-		) &&
-		["remove", "delete", "del"].includes(message.split(" ")[0]) &&
+		broadcasterCommandList.includes(command) &&
+		deleteCommands.includes(message.split(" ")[0]) &&
 		flags.broadcaster
 	) {
 		// example: !broadcastercommand delete !hello
