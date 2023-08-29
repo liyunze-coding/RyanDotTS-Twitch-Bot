@@ -1,6 +1,6 @@
 # RyanPython Twitch Bot commands
 
-## Information about streamer:
+## Commands
 
 -   !intro
 -   !website
@@ -18,8 +18,14 @@
 -   !lurk
 -   !unlurk
 
+[MORE COMMANDS HERE](./json_files/commands.json)
+
 ## Moderator/Streamer only commands
 
 -   !raid
--   !raid2
--   !clear (to clear task bot)
+-   !so
+-   !promote
+-   !rcmd add/edit/remove (general commands)
+-   !modcmd add/edit/remove (mod commands)
+
+[MORE MOD COMMANDS HERE](./json_files/broadcaster_commands.json)
