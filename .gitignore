@@ -1,4 +1,7 @@
 .env
 node_modules/
 dist/
+.vscode/
 twitch-bot.bat
+get_token.txt
+streamer_list.py
