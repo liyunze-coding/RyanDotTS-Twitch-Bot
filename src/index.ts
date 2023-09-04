@@ -206,6 +206,14 @@ ComfyJS.onCommand = async (
 	flags: any,
 	extra: any
 ) => {
+	// shoutout streamers
+	if (streamers[user.toLowerCase()]) {
+		setTimeout(() => {
+			callShoutoutStreamer(user);
+		}, 3000);
+		streamers[user.toLowerCase()] = false;
+	}
+
 	// Check if the command exists in the regular commands object
 	if (commands[command]) {
 		let reply = commands[command];
