@@ -31,6 +31,17 @@ const addCommands = ["add"];
 const editCommands = ["edit"];
 const deleteCommands = ["remove", "delete", "del"];
 
+interface StreamerConvertUsername {
+	[key: string]: string;
+}
+
+const streamerConvertUsername: StreamerConvertUsername = {
+	_花貓_: "meowkyai",
+	thoebokki: "valecey",
+	apprenticealex: "drminakovenus",
+	"dragons_and_dream": "productive_girlie"
+};
+
 // text files
 const compliments: string[] = fs
 	.readFileSync(__dirname + "/../text_files/compliments.txt", "utf8")
@@ -146,13 +157,26 @@ function getClip(): Promise<string> {
 }
 
 async function callShoutoutStreamer(username: string) {
-	let userID = await getUsernameId(username);
-	let game = await getLastGame(userID);
+	if (streamerConvertUsername[username]) {
+		username = streamerConvertUsername[username];
+	}
 
-	ComfyJS.Say(
-		`Hey guys! Please check out @${username}! They were last streaming ${game} at https://twitch.tv/${username}!`,
-		STREAMER
-	);
+	try {
+		let userID = await getUsernameId(username);
+		let game = await getLastGame(userID);
+		ComfyJS.Say(
+			`Hey guys! Please check out @${username} ! They were last streaming ${game} at https://twitch.tv/${username}`,
+			STREAMER
+		);
+
+		ComfyJS.Say(`/shoutout ${username}`, STREAMER);
+	} catch (err) {
+		ComfyJS.Say(
+			"oh no, something went wrong with the shoutout command",
+			STREAMER
+		);
+		return;
+	}
 }
 
 // modify json files
@@ -207,11 +231,18 @@ ComfyJS.onCommand = async (
 	extra: any
 ) => {
 	// shoutout streamers
-	if (streamers[user.toLowerCase()]) {
+	if (
+		streamers[user.toLowerCase()] ||
+		streamers[streamerConvertUsername[user.toLowerCase()]]
+	) {
+		let username = streamerConvertUsername[user.toLowerCase()]
+			? streamerConvertUsername[user.toLowerCase()]
+			: user.toLowerCase();
 		setTimeout(() => {
-			callShoutoutStreamer(user);
+			callShoutoutStreamer(username);
 		}, 3000);
-		streamers[user.toLowerCase()] = false;
+
+		streamers[username] = false;
 	}
 
 	// Check if the command exists in the regular commands object
@@ -245,7 +276,7 @@ ComfyJS.onCommand = async (
 	}
 	// Handle the "promote" command if the user is a broadcaster
 	else if (command === "promote" && flags.broadcaster) {
-		let content_of_promotion = `<@&1038436118816903210> \n# <https://www.twitch.tv/RyanPython>\n${message}`;
+		let content_of_promotion = `<@&1038436118816903210> \n# <https://www.twitch.tv/RythonDev>\n${message}`;
 
 		// Send a webhook to promote the channel
 		sendWebHook(WEBHOOK_URL, {
@@ -521,19 +552,32 @@ ComfyJS.onChat = async (
 	extra: any
 ) => {
 	// shoutout streamers
-	if (streamers[user.toLowerCase()]) {
+	if (
+		streamers[user.toLowerCase()] ||
+		streamers[streamerConvertUsername[user.toLowerCase()]]
+	) {
+		let username = streamerConvertUsername[user.toLowerCase()]
+			? streamerConvertUsername[user.toLowerCase()]
+			: user.toLowerCase();
+
 		setTimeout(() => {
-			callShoutoutStreamer(user);
+			callShoutoutStreamer(username);
 		}, 3000);
-		streamers[user.toLowerCase()] = false;
+
+		streamers[username] = false;
 	}
 
 	// After:
 	// 20 messages and 5 minutes
 	if (
-		!["ryandotts", "streamelements", "ryanpython"].includes(
-			user.toLowerCase()
-		) &&
+		![
+			"ryandotts",
+			"streamelements",
+			"rythondev",
+			"mohcitrus",
+			"sery_bot",
+			"kofistreambot",
+		].includes(user.toLowerCase()) &&
 		messageCount >= messageLimit &&
 		Date.now() - lastMessageTimestamp >= timeLimit
 	) {
