@@ -1,23 +1,50 @@
-import ComfyJS from "comfy.js";
 import axios from "axios";
 import fs from "fs";
 import FormData from "form-data";
-import say from "say";
 import * as dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
+import { StreamerbotClient } from "@streamerbot/client";
+
+const client = new StreamerbotClient({
+	host: "127.0.0.1",
+	port: 6968,
+	endpoint: "/",
+	subscribe: {
+		YouTube: ["Message"],
+		Twitch: ["ChatMessage"],
+	},
+	onData: onData,
+});
+
+async function sendChatResponse(response: string, source: string) {
+	if (source === "youtube") {
+		const streamerYTBotResponse = await client.doAction(
+			"390ff8f2-7945-4eba-be2a-a1c0e4ba535d",
+			{
+				response: response,
+			}
+		);
+
+		console.log(streamerYTBotResponse);
+	} else {
+		const streamerTwitchBotResponse = await client.doAction(
+			"8ff809be-e269-4f06-9528-021ef58df436",
+			{
+				response: response,
+			}
+		);
+
+		console.log(streamerTwitchBotResponse);
+	}
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: __dirname + "/../.env" });
 
-const CLIENT_ID = process.env.CLIENT_ID ? process.env.CLIENT_ID : "";
-const CLIENT_TOKEN = process.env.CLIENT_TOKEN ? process.env.CLIENT_TOKEN : "";
 const WEBHOOK_URL = process.env.WEBHOOK_URL ? process.env.WEBHOOK_URL : "";
-const STREAMER = process.env.STREAMER ? process.env.STREAMER : "";
-const BOT_NAME = process.env.BOT_NAME ? process.env.BOT_NAME : "";
-const CLIP_URL = process.env.CLIP_URL ? process.env.CLIP_URL : "";
 
 const commandList = ["ryancommand", "ryancmd", "rcmd"];
 const broadcasterCommandList = [
@@ -30,17 +57,6 @@ const broadcasterCommandList = [
 const addCommands = ["add"];
 const editCommands = ["edit"];
 const deleteCommands = ["remove", "delete", "del"];
-
-interface StreamerConvertUsername {
-	[key: string]: string;
-}
-
-const streamerConvertUsername: StreamerConvertUsername = {
-	_花貓_: "meowkyai",
-	thoebokki: "valecey",
-	apprenticealex: "drminakovenus",
-	"dragons_and_dream": "productive_girlie"
-};
 
 // text files
 const compliments: string[] = fs
@@ -66,11 +82,6 @@ const streamers_to_shoutout: string[] = fs
 	)
 	.replace(/\r/g, "")
 	.split("\n");
-
-// TTS for streamer to hear redeems, in case they don't have the dashboard open
-const textToSpeech = (text: string) => {
-	say.speak(text);
-};
 
 const randomAutoResponse = ["compliment", "quote", "timer"] as const;
 
@@ -107,77 +118,6 @@ const sendWebHook = async (url: string, data: any) => {
 
 	await axios.post(url, form);
 };
-
-function getUsernameId(username: string): Promise<string> {
-	return axios
-		.get(`https://api.twitch.tv/helix/users?login=${username}`, {
-			headers: {
-				"Client-ID": CLIENT_ID,
-				Authorization: `Bearer ${CLIENT_TOKEN}`,
-			},
-		})
-		.then((res) => {
-			return res.data.data[0].id;
-		})
-		.catch((err) => {
-			console.error(`Error getting user ID for ${username}: ${err}`);
-			return "";
-		});
-}
-
-function getLastGame(id: string): Promise<string> {
-	return new Promise((resolve, reject) => {
-		axios
-			.get(`https://api.twitch.tv/helix/channels?broadcaster_id=${id}`, {
-				headers: {
-					"Client-ID": CLIENT_ID,
-					Authorization: `Bearer ${CLIENT_TOKEN}`,
-				},
-			})
-			.then((res) => {
-				resolve(res.data.data[0].game_name);
-			})
-			.catch((err) => {
-				reject(err);
-			});
-	});
-}
-
-function getClip(): Promise<string> {
-	return new Promise((resolve, reject) => {
-		axios
-			.get(CLIP_URL)
-			.then((res) => {
-				resolve(res.data);
-			})
-			.catch((err) => {
-				reject(err);
-			});
-	});
-}
-
-async function callShoutoutStreamer(username: string) {
-	if (streamerConvertUsername[username]) {
-		username = streamerConvertUsername[username];
-	}
-
-	try {
-		let userID = await getUsernameId(username);
-		let game = await getLastGame(userID);
-		ComfyJS.Say(
-			`Hey guys! Please check out @${username} ! They were last streaming ${game} at https://twitch.tv/${username}`,
-			STREAMER
-		);
-
-		ComfyJS.Say(`/shoutout ${username}`, STREAMER);
-	} catch (err) {
-		ComfyJS.Say(
-			"oh no, something went wrong with the shoutout command",
-			STREAMER
-		);
-		return;
-	}
-}
 
 // modify json files
 
@@ -222,29 +162,93 @@ function deleteBroadcasterCommand(command: string) {
 	);
 }
 
-// Handle chat commands
-ComfyJS.onCommand = async (
+/**
+ * Handles incoming data, processes it if it's a YouTube message event.
+ *
+ * @param {Object} data - The incoming data object.
+ * @param {Object} data.event - The event details.
+ * @param {string} data.event.source - The source of the event.
+ * @param {string} data.event.type - The type of the event.
+ * @param {Object} data.data - The payload of the event.
+ * @param {string} data.data.message - The message from the event.
+ * @param {Object} data.data.user - The user who triggered the event.
+ * @param {string} data.data.user.name - The name of the user.
+ * @param {boolean} data.data.user.isOwner - Flag indicating if the user is the owner.
+ * @param {boolean} data.data.user.isModerator - Flag indicating if the user is a moderator.
+ */
+function onData(data: any) {
+	if (!data.event) return;
+	if (data.event.source === "YouTube" && data.event.type === "Message") {
+		const payload = data.data;
+		const source = data.event.source.toLowerCase();
+		const user = payload.user.name;
+
+		// check if message starts with prefix
+		if (!payload.message.startsWith("!")) {
+			processChat(user, source);
+			return;
+		}
+
+		const command = payload.message.substring(1).split(" ")[0];
+
+		// remove first word from message
+		const message = payload.message.split(" ").slice(1).join(" ");
+
+		// set flags
+		const flags = {
+			broadcaster: payload.user.isOwner,
+			mod: payload.user.isModerator,
+		};
+
+		processCommand(user, command, message, flags, source);
+	} else if (
+		data.event.source === "Twitch" &&
+		data.event.type === "ChatMessage"
+	) {
+		const payload = data.data;
+		const source = data.event.source.toLowerCase();
+		const user = payload.message.displayName;
+
+		console.log(payload.message.message);
+
+		// check if message starts with prefix
+		if (!payload.message.message.startsWith("!")) {
+			processChat(user, source);
+			return;
+		}
+
+		const command = payload.message.message.substring(1).split(" ")[0];
+		const message = payload.message.message.split(" ").slice(1).join(" ");
+
+		// iterate through payload.message.badges
+		// each iteration has name in an object
+		// if name is "moderator" or "broadcaster", set flags.mod or flags.broadcaster to true
+		const badges = payload.message.badges;
+
+		const flags = {
+			broadcaster: false,
+			mod: false,
+		};
+
+		badges.forEach((badge: any) => {
+			if (badge.name === "broadcaster") {
+				flags.broadcaster = true;
+			} else if (badge.name === "moderator") {
+				flags.mod = true;
+			}
+		});
+
+		processCommand(user, command, message, flags, source);
+	}
+}
+
+function processCommand(
 	user: string,
 	command: string,
 	message: string,
 	flags: any,
-	extra: any
-) => {
-	// shoutout streamers
-	if (
-		streamers[user.toLowerCase()] ||
-		streamers[streamerConvertUsername[user.toLowerCase()]]
-	) {
-		let username = streamerConvertUsername[user.toLowerCase()]
-			? streamerConvertUsername[user.toLowerCase()]
-			: user.toLowerCase();
-		setTimeout(() => {
-			callShoutoutStreamer(username);
-		}, 3000);
-
-		streamers[username] = false;
-	}
-
+	source: string
+) {
 	// Check if the command exists in the regular commands object
 	if (commands[command]) {
 		let reply = commands[command];
@@ -252,7 +256,7 @@ ComfyJS.onCommand = async (
 		reply = reply.replace("{user}", `@${user}`);
 		reply = reply.replace("{mention}", `${mention}`);
 
-		ComfyJS.Say(reply, STREAMER);
+		sendChatResponse(reply, source);
 	}
 	// Check if the command exists in the broadcaster commands object and the user is a broadcaster or mod
 	else if (broadcasterCommands[command] && (flags.broadcaster || flags.mod)) {
@@ -261,18 +265,14 @@ ComfyJS.onCommand = async (
 		reply = reply.replace("{user}", `@${user}`);
 		reply = reply.replace("{mention}", `${mention}`);
 
-		// Send the reply to the chat
-
-		ComfyJS.Say(reply, STREAMER);
+		sendChatResponse(reply, source);
 	}
 	// Handle the "time" command
 	else if (command === "time") {
 		let d = new Date();
 		let localtime = d.toLocaleTimeString("en-US", { hour12: true });
 
-		// Send the current time to the chat
-
-		ComfyJS.Say(`${user} it is currently ${localtime}`, STREAMER);
+		sendChatResponse(`${user} it is currently ${localtime}`, source);
 	}
 	// Handle the "promote" command if the user is a broadcaster
 	else if (command === "promote" && flags.broadcaster) {
@@ -283,9 +283,7 @@ ComfyJS.onCommand = async (
 			content: content_of_promotion,
 		});
 
-		// Send a confirmation message to the chat
-
-		ComfyJS.Say(`${user} promotion successful!`, STREAMER);
+		sendChatResponse(`${user} promotion successful!`, source);
 	}
 	// Handle the "compliment" command
 	else if (command === "compliment") {
@@ -299,25 +297,13 @@ ComfyJS.onCommand = async (
 		let random_compliment =
 			compliments[Math.floor(Math.random() * compliments.length)];
 
-		// Send a random compliment to the chat
-
-		ComfyJS.Say(`${compliment_user} ${random_compliment}`, STREAMER);
+		sendChatResponse(`${compliment_user} ${random_compliment}`, source);
 	}
 	// Handle the "quote" command
 	else if (command === "quote") {
 		let random_quote = quotes[Math.floor(Math.random() * quotes.length)];
 
-		// Send a random quote to the chat
-
-		ComfyJS.Say(`${random_quote}`, STREAMER);
-	}
-	// Handle the "so" command if the user is a broadcaster or mod
-	else if (command === "so" && (flags.broadcaster || flags.mod)) {
-		let streamer = message.split(" ")[0];
-		streamer = streamer.replace("@", "");
-
-		// Call the shoutout function for the specified streamer
-		callShoutoutStreamer(streamer);
+		sendChatResponse(`${random_quote}`, source);
 	}
 	// Handle the "addcommand" command if the user is a broadcaster
 	else if (
@@ -338,9 +324,9 @@ ComfyJS.onCommand = async (
 		if (commands[command_to_add]) {
 			// Send a confirmation message to the chat
 
-			ComfyJS.Say(
+			sendChatResponse(
 				`${user} command '${command_to_add}' already exists! Please use the edit command instead.`,
-				STREAMER
+				source
 			);
 			return;
 		}
@@ -350,9 +336,9 @@ ComfyJS.onCommand = async (
 
 		// Send a confirmation message to the chat
 
-		ComfyJS.Say(
+		sendChatResponse(
 			`${user} command '${command_to_add}' added successfully!`,
-			STREAMER
+			source
 		);
 	}
 	// Handle the "editcommand" command if the user is a broadcaster
@@ -374,9 +360,9 @@ ComfyJS.onCommand = async (
 		if (!commands[command_to_edit]) {
 			// Send a confirmation message to the chat
 
-			ComfyJS.Say(
+			sendChatResponse(
 				`${user} command '${command_to_edit}' doesn't exist! Please use the add command instead.`,
-				STREAMER
+				source
 			);
 			return;
 		}
@@ -386,9 +372,9 @@ ComfyJS.onCommand = async (
 
 		// Send a confirmation message to the chat
 
-		ComfyJS.Say(
+		sendChatResponse(
 			`${user} command '${command_to_edit}' edited successfully!`,
-			STREAMER
+			source
 		);
 	}
 	// Handle the "deletecommand" command if the user is a broadcaster
@@ -409,9 +395,9 @@ ComfyJS.onCommand = async (
 		if (!commands[command_to_delete]) {
 			// Send a confirmation message to the chat
 
-			ComfyJS.Say(
+			sendChatResponse(
 				`${user} command '${command_to_delete}' doesn't exist!`,
-				STREAMER
+				source
 			);
 			return;
 		}
@@ -421,9 +407,9 @@ ComfyJS.onCommand = async (
 
 		// Send a confirmation message to the chat
 
-		ComfyJS.Say(
+		sendChatResponse(
 			`${user} command '${command_to_delete}' deleted successfully!`,
-			STREAMER
+			source
 		);
 	}
 	// Handle the "addbroadcastercommand" command if the user is a broadcaster
@@ -446,9 +432,9 @@ ComfyJS.onCommand = async (
 
 		// Send a confirmation message to the chat
 
-		ComfyJS.Say(
+		sendChatResponse(
 			`${user} broadcaster command '${command_to_add}' added successfully!`,
-			STREAMER
+			source
 		);
 	}
 	// Handle the "editbroadcastercommand" command if the user is a broadcaster
@@ -471,9 +457,9 @@ ComfyJS.onCommand = async (
 
 		// Send a confirmation message to the chat
 
-		ComfyJS.Say(
+		sendChatResponse(
 			`${user} broadcaster command '${command_to_edit}' edited successfully!`,
-			STREAMER
+			source
 		);
 	}
 	// Handle the "deletebroadcastercommand" command if the user is a broadcaster
@@ -495,18 +481,12 @@ ComfyJS.onCommand = async (
 
 		// Send a confirmation message to the chat
 
-		ComfyJS.Say(
+		sendChatResponse(
 			`${user} broadcaster command '${command_to_delete}' deleted successfully!`,
-			STREAMER
+			source
 		);
 	}
-	// clip command
-	else if (command === "clip" && flags.broadcaster) {
-		let clip = await getClip();
-
-		ComfyJS.Say(`@${user} ${clip}`, STREAMER);
-	}
-};
+}
 
 // send a quote, compliment, or timer message
 function activateTimerMessages(user: string) {
@@ -522,20 +502,20 @@ function activateTimerMessages(user: string) {
 
 		// Send a random compliment to the chat
 
-		ComfyJS.Say(`@${user} ${randomCompliment}`, STREAMER);
+		sendChatResponse(`@${user} ${randomCompliment}`, "twitch");
 	} else if (autoresponder === "quote") {
 		let randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
 
 		// Send a random quote to the chat
 
-		ComfyJS.Say(`${randomQuote}`, STREAMER);
+		sendChatResponse(`${randomQuote}`, "twitch");
 	} else if (autoresponder === "timer") {
 		let randomTimerMessage =
 			timerMessages[Math.floor(Math.random() * timerMessages.length)];
 
 		// Send a random timer message to the chat
 
-		ComfyJS.Say(`${randomTimerMessage}`, STREAMER);
+		sendChatResponse(`${randomTimerMessage}`, "twitch");
 	}
 }
 
@@ -544,40 +524,23 @@ let lastMessageTimestamp: number = Date.now();
 let timeLimit = 5 * 60 * 1000; // 5 minutes
 let messageLimit = 20;
 
-ComfyJS.onChat = async (
-	user: string,
-	message: string,
-	flags: any,
-	self: boolean,
-	extra: any
-) => {
-	// shoutout streamers
-	if (
-		streamers[user.toLowerCase()] ||
-		streamers[streamerConvertUsername[user.toLowerCase()]]
-	) {
-		let username = streamerConvertUsername[user.toLowerCase()]
-			? streamerConvertUsername[user.toLowerCase()]
-			: user.toLowerCase();
-
-		setTimeout(() => {
-			callShoutoutStreamer(username);
-		}, 3000);
-
-		streamers[username] = false;
-	}
-
+function processChat(user: string, source: string) {
 	// After:
 	// 20 messages and 5 minutes
 	if (
-		![
+		[
 			"ryandotts",
-			"streamelements",
 			"rythondev",
 			"mohcitrus",
 			"sery_bot",
 			"kofistreambot",
-		].includes(user.toLowerCase()) &&
+		].includes(user.toLowerCase()) ||
+		source === "youtube"
+	) {
+		return;
+	}
+
+	if (
 		messageCount >= messageLimit &&
 		Date.now() - lastMessageTimestamp >= timeLimit
 	) {
@@ -587,17 +550,4 @@ ComfyJS.onChat = async (
 	} else {
 		messageCount++;
 	}
-};
-
-ComfyJS.onReward = (
-	user: string,
-	reward: string,
-	cost: string,
-	message: string,
-	extra: any
-) => {
-	// console.log(user + " redeemed " + reward + " for " + cost);
-	textToSpeech(`${user} redeemed ${reward}`);
-};
-
-ComfyJS.Init(BOT_NAME, `oauth:${CLIENT_TOKEN}`, STREAMER);
+}
