@@ -3,41 +3,10 @@ import fs from "fs";
 import FormData from "form-data";
 import * as dotenv from "dotenv";
 import path from "path";
+import say from "say";
 import { fileURLToPath } from "url";
 import { StreamerbotClient } from "@streamerbot/client";
-
-const client = new StreamerbotClient({
-	host: "127.0.0.1",
-	port: 6968,
-	endpoint: "/",
-	subscribe: {
-		YouTube: ["Message"],
-		Twitch: ["ChatMessage"],
-	},
-	onData: onData,
-});
-
-async function sendChatResponse(response: string, source: string) {
-	if (source === "youtube") {
-		const streamerYTBotResponse = await client.doAction(
-			"390ff8f2-7945-4eba-be2a-a1c0e4ba535d",
-			{
-				response: response,
-			}
-		);
-
-		console.log(streamerYTBotResponse);
-	} else {
-		const streamerTwitchBotResponse = await client.doAction(
-			"8ff809be-e269-4f06-9528-021ef58df436",
-			{
-				response: response,
-			}
-		);
-
-		console.log(streamerTwitchBotResponse);
-	}
-}
+import { text } from "stream/consumers";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -91,6 +60,7 @@ interface Commands {
 
 let commands: Commands = {};
 let broadcasterCommands: Commands = {};
+const streamers: { [key: string]: boolean } = {};
 
 try {
 	const commandsFile = fs.readFileSync("json_files/commands.json", "utf-8");
@@ -105,7 +75,34 @@ try {
 	console.error(`Error reading commands file: ${err}`);
 }
 
-const streamers: { [key: string]: boolean } = {};
+const client = new StreamerbotClient({
+	host: "127.0.0.1",
+	port: 6968,
+	endpoint: "/",
+	subscribe: {
+		YouTube: ["Message"],
+		Twitch: ["ChatMessage", "RewardRedemption"],
+	},
+	onData: onData,
+});
+
+async function sendChatResponse(response: string, source: string) {
+	if (source === "youtube") {
+		// const streamerYTBotResponse =
+		await client.doAction("390ff8f2-7945-4eba-be2a-a1c0e4ba535d", {
+			response: response,
+		});
+
+		// console.log(streamerYTBotResponse);
+	} else {
+		// const streamerTwitchBotResponse =
+		await client.doAction("8ff809be-e269-4f06-9528-021ef58df436", {
+			response: response,
+		});
+
+		// console.log(streamerTwitchBotResponse);
+	}
+}
 
 for (const s of streamers_to_shoutout) {
 	streamers[s.toLowerCase()] = true;
@@ -162,6 +159,37 @@ function deleteBroadcasterCommand(command: string) {
 	);
 }
 
+// send a quote, compliment, or timer message
+function activateTimerMessages(user: string) {
+	// quote, compliment, or timer message
+	let autoresponder =
+		randomAutoResponse[
+			Math.floor(Math.random() * randomAutoResponse.length)
+		];
+
+	if (autoresponder === "compliment") {
+		let randomCompliment =
+			compliments[Math.floor(Math.random() * compliments.length)];
+
+		// Send a random compliment to the chat
+
+		sendChatResponse(`@${user} ${randomCompliment}`, "twitch");
+	} else if (autoresponder === "quote") {
+		let randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+
+		// Send a random quote to the chat
+
+		sendChatResponse(`${randomQuote}`, "twitch");
+	} else if (autoresponder === "timer") {
+		let randomTimerMessage =
+			timerMessages[Math.floor(Math.random() * timerMessages.length)];
+
+		// Send a random timer message to the chat
+
+		sendChatResponse(`${randomTimerMessage}`, "twitch");
+	}
+}
+
 /**
  * Handles incoming data, processes it if it's a YouTube message event.
  *
@@ -209,8 +237,6 @@ function onData(data: any) {
 		const source = data.event.source.toLowerCase();
 		const user = payload.message.displayName;
 
-		console.log(payload.message.message);
-
 		// check if message starts with prefix
 		if (!payload.message.message.startsWith("!")) {
 			processChat(user, source);
@@ -239,6 +265,13 @@ function onData(data: any) {
 		});
 
 		processCommand(user, command, message, flags, source);
+	} else if (
+		data.event.source === "Twitch" &&
+		data.event.type === "RewardRedemption"
+	) {
+		textToSpeech(
+			`${data.data.user_name} redeemed ${data.data.reward.title}`
+		);
 	}
 }
 
@@ -488,37 +521,6 @@ function processCommand(
 	}
 }
 
-// send a quote, compliment, or timer message
-function activateTimerMessages(user: string) {
-	// quote, compliment, or timer message
-	let autoresponder =
-		randomAutoResponse[
-			Math.floor(Math.random() * randomAutoResponse.length)
-		];
-
-	if (autoresponder === "compliment") {
-		let randomCompliment =
-			compliments[Math.floor(Math.random() * compliments.length)];
-
-		// Send a random compliment to the chat
-
-		sendChatResponse(`@${user} ${randomCompliment}`, "twitch");
-	} else if (autoresponder === "quote") {
-		let randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
-
-		// Send a random quote to the chat
-
-		sendChatResponse(`${randomQuote}`, "twitch");
-	} else if (autoresponder === "timer") {
-		let randomTimerMessage =
-			timerMessages[Math.floor(Math.random() * timerMessages.length)];
-
-		// Send a random timer message to the chat
-
-		sendChatResponse(`${randomTimerMessage}`, "twitch");
-	}
-}
-
 let messageCount: number = 0;
 let lastMessageTimestamp: number = Date.now();
 let timeLimit = 5 * 60 * 1000; // 5 minutes
@@ -551,3 +553,7 @@ function processChat(user: string, source: string) {
 		messageCount++;
 	}
 }
+
+const textToSpeech = (text: string) => {
+	say.speak(text);
+};
