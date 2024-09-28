@@ -1,3 +1,11 @@
 Thanks for dropping by! If Ryan isn't responding, that means that he's super focused and will respond to you when it's break time! 
 Join the Discord server! https://discord.gg/UnHyHkhbga
 Add your task to our list with "!taskadd <your task>". It's a simple way to feel more connected and stay on track during our coworking sessions.
+Did you know that if you connect your Amazon Prime account with your Twitch account, you get one FREE sub per month? Link your accounts here: https://gaming.amazon.com/links/twitch/manage
+Saw a funny moment on stream? Clip it! You can use !clip to capture the moment and share it with the community <3
+Struggling with productivity? Write down your tasks like "!taskadd create today's to-do list". When you're done with your list of tasks, mark the first one off with "!taskdone 1".
+Remember: 1. Lists don't have to be completed | 2. Lists don't need to be completed in order | 3. It's okay if you only complete a few tasks, you're making good progress and I'm proud of you for it.
+Have a hard time focusing on your tasks? Use "!focus <number>" to focus on a singular task.
+Not feeling focused enough with the ASMR audio? Play your preferred music over it!
+Hello! I'm Ryan from Malaysia, studying my Bachelor's of Computer Science degree in Australia. I do co-working & study streams featuring my multi-task widget! I previously interned as a frontend web dev. !taskhelp !website !socials
+Want to collaborate? Sponsor me? Have a question? Feel free to reach out to me via email at https://rython.dev/contact/ !

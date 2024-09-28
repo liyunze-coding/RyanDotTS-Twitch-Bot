@@ -5,3 +5,4 @@ dist/
 twitch-bot.bat
 get_token.txt
 streamer_list.py
+rewrite_streamer_list.py

@@ -6,7 +6,6 @@ import path from "path";
 import say from "say";
 import { fileURLToPath } from "url";
 import { StreamerbotClient } from "@streamerbot/client";
-import { text } from "stream/consumers";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -43,15 +42,6 @@ const timerMessages: string[] = fs
 	.replace(/\r/g, "")
 	.split("\n");
 
-// remove \r from file
-const streamers_to_shoutout: string[] = fs
-	.readFileSync(
-		__dirname + "/../text_files/streamers_to_shoutout.txt",
-		"utf8"
-	)
-	.replace(/\r/g, "")
-	.split("\n");
-
 const randomAutoResponse = ["compliment", "quote", "timer"] as const;
 
 interface Commands {
@@ -60,7 +50,7 @@ interface Commands {
 
 let commands: Commands = {};
 let broadcasterCommands: Commands = {};
-const streamers: { [key: string]: boolean } = {};
+let streamers: { [key: string]: boolean } = {};
 
 try {
 	const commandsFile = fs.readFileSync("json_files/commands.json", "utf-8");
@@ -104,16 +94,18 @@ async function sendChatResponse(response: string, source: string) {
 	}
 }
 
-for (const s of streamers_to_shoutout) {
-	streamers[s.toLowerCase()] = true;
-}
-
 const sendWebHook = async (url: string, data: any) => {
 	const form = new FormData();
 
 	form.append("payload_json", JSON.stringify(data));
 
-	await axios.post(url, form);
+	try {
+		await axios.post(url, form, {
+			headers: form.getHeaders(),
+		});
+	} catch (error) {
+		console.error("Error sending webhook:", error);
+	}
 };
 
 // modify json files
@@ -518,17 +510,27 @@ function processCommand(
 			`${user} broadcaster command '${command_to_delete}' deleted successfully!`,
 			source
 		);
+	} else if (["define", "definition"].includes(command)) {
+		const word = message.split(" ")[0];
+
+		lookUpDefinition(word).then((definition) => {
+			sendChatResponse(definition, source);
+		});
+	} else if (["convert"].includes(command)) {
+		let response = "";
+
+		response = convert(message);
+
+		sendChatResponse(response, source);
 	}
 }
 
 let messageCount: number = 0;
 let lastMessageTimestamp: number = Date.now();
 let timeLimit = 5 * 60 * 1000; // 5 minutes
-let messageLimit = 20;
+let messageLimit = 10;
 
 function processChat(user: string, source: string) {
-	// After:
-	// 20 messages and 5 minutes
 	if (
 		[
 			"ryandotts",
@@ -557,3 +559,109 @@ function processChat(user: string, source: string) {
 const textToSpeech = (text: string) => {
 	say.speak(text);
 };
+
+async function lookUpDefinition(word: string) {
+	const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`;
+	const definitions: any = await axios.get(url);
+	const meanings = definitions.data[0].meanings;
+
+	let response = `${word}: `;
+
+	meanings.forEach((meaning: any) => {
+		response += `${meaning.partOfSpeech}: ${meaning.definitions[0].definition} `;
+	});
+
+	return response;
+}
+
+// Conversion functions
+function convertLength(value: number, unit: string): number {
+	switch (unit) {
+		case "ft":
+		case "'":
+			return value * 0.3048; // feet to meters
+		case "inch":
+		case '"':
+			return value * 0.0254; // inches to meters
+		case "m":
+			return value; // meters to meters
+		default:
+			throw new Error(`Unsupported length unit: ${unit}`);
+	}
+}
+
+function convertSpeed(value: number, unit: string): number {
+	switch (unit) {
+		case "mph":
+			return value * 0.44704; // miles per hour to meters per second
+		case "kph":
+			return value / 3.6; // kilometers per hour to meters per second
+		case "m/s":
+			return value; // meters per second to meters per second
+		default:
+			throw new Error(`Unsupported speed unit: ${unit}`);
+	}
+}
+
+function convertVolume(value: number, unit: string): number {
+	switch (unit) {
+		case "gallon":
+		case "gal":
+			return value * 3.78541; // gallons to liters
+		case "litre":
+		case "liter":
+		case "l":
+			return value; // liters to liters
+		default:
+			throw new Error(`Unsupported volume unit: ${unit}`);
+	}
+}
+
+function convertTemperature(value: number, unit: string): number {
+	switch (unit) {
+		case "F":
+			return ((value - 32) * 5) / 9; // Fahrenheit to Celsius
+		case "C":
+			return value; // Celsius to Celsius
+		default:
+			throw new Error(`Unsupported temperature unit: ${unit}`);
+	}
+}
+
+// Main conversion function
+function convert(input: string): string {
+	const lengthPattern = /^(0|[1-9][0-9]*)\s*(ft|\'|inch|\"|m)$/;
+	const speedPattern = /^(0|[1-9][0-9]*)\s*(mph|kph|m\/s)$/;
+	const volumePattern = /^(0|[1-9][0-9]*)\s*(gallon|gal|litre|liter|l)$/;
+	const temperaturePattern = /^(0|[1-9][0-9]*)\s*(F|C)$/;
+
+	let match = input.match(lengthPattern);
+	if (match) {
+		const value = parseFloat(match[1]);
+		const unit = match[2];
+		return `${convertLength(value, unit)} meters`;
+	}
+
+	match = input.match(speedPattern);
+	if (match) {
+		const value = parseFloat(match[1]);
+		const unit = match[2];
+		return `${convertSpeed(value, unit)} meters per second`;
+	}
+
+	match = input.match(volumePattern);
+	if (match) {
+		const value = parseFloat(match[1]);
+		const unit = match[2];
+		return `${convertVolume(value, unit)} liters`;
+	}
+
+	match = input.match(temperaturePattern);
+	if (match) {
+		const value = parseFloat(match[1]);
+		const unit = match[2];
+		return `${convertTemperature(value, unit)} Celsius`;
+	}
+
+	return `Unsupported input: ${input}`;
+}
