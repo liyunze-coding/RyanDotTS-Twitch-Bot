@@ -1,0 +1,3 @@
+[submodule "RyanDotTS-Twitch-Bot"]
+	path = RyanDotTS-Twitch-Bot
+	url = https://github.com/liyunze-coding/RyanDotTS-Twitch-Bot

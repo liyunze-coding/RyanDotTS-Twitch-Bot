@@ -1,31 +1,15 @@
-# RyanPython Twitch Bot commands
+# .
 
-## Commands
+To install dependencies:
 
--   !intro
--   !website
--   !github
--   !compliment
--   !quote
--   !hug \@user
--   !pat \@user
--   !bonk \@user
--   !kabedon \@user
--   !chancla \@user
--   !socials
--   !github
--   !discord
--   !lurk
--   !unlurk
+```bash
+bun install
+```
 
-[MORE COMMANDS HERE](./json_files/commands.json)
+To run:
 
-## Moderator/Streamer only commands
+```bash
+bun run index.ts
+```
 
--   !raid
--   !so
--   !promote
--   !rcmd add/edit/remove (general commands)
--   !modcmd add/edit/remove (mod commands)
-
-[MORE MOD COMMANDS HERE](./json_files/broadcaster_commands.json)
+This project was created using `bun init` in bun v1.1.13. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.

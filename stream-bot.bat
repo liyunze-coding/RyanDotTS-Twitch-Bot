@@ -1,3 +1,3 @@
-cd C:\Users\ryanl\Desktop\programming\javascript\node_stuff\STREAM_BOT_OFFICIAL\
+cd C:\Users\ryanl\Desktop\programming\javascript\node_stuff\RyanDotTS\
 
-npm run build
+bun --watch index.ts
