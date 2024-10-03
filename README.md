@@ -1,6 +1,6 @@
 # RyanDotTS
 
-An interactive Twitch bot on [RythonDev's](https://twitch.tv/RythonDev) channel.
+An interactive Twitch bot on [RythonDev's channel](https://twitch.tv/RythonDev).
 
 ## Setup
 
