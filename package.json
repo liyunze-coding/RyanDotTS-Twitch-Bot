@@ -10,6 +10,8 @@
 	},
 	"dependencies": {
 		"@streamerbot/client": "^1.5.2",
+		"@twurple/api": "^7.1.0",
+		"@twurple/auth": "^7.1.0",
 		"axios": "^1.7.7",
 		"form-data": "^4.0.0",
 		"say": "^0.16.0"

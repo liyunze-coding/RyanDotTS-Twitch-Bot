@@ -1,15 +1,52 @@
 import { client } from "./utils/SBClient";
 import textToSpeech from "./utils/TextToSpeech";
 import { processChat, processCommand } from "./utils/ChatProcessor";
-import "./utils/Commands";
+import { sendEmbedWebHook } from "./utils/DiscordWebHook";
+import { getProfileURL, getVODTimestamp } from "./utils/TwitchAPI";
 
 client.on("Twitch.RewardRedemption", async (data: any) => {
 	try {
-		await textToSpeech(
-			`${data.data.user_name} redeemed ${data.data.reward.title}`
+		let username = data.data.user_name;
+		let reward = data.data.reward;
+
+		let userInput = data.data.user_input ?? "";
+
+		let response = `${username} redeemed ${reward.title}`;
+
+		if (userInput) {
+			response += ` with message: ${userInput}`;
+		}
+
+		// Check if it's the other TTS reward
+		if (reward.id !== "8dc5018c-039d-4ec9-b818-6c8eaaa5a7a1") {
+			// Send TTS message to broadcaster only
+			await textToSpeech(response);
+		}
+
+		// Send message to Discord with VOD Timestamp
+		let timestampedURL = await getVODTimestamp("248474026");
+		console.log(timestampedURL);
+
+		let profileURL = await getProfileURL(data.data.user_id);
+
+		await sendEmbedWebHook(
+			"https://discord.com/api/webhooks/1065413606080004217/S6M4YsBJZugNERrkZ8OWpuGj-Oee1NTHNUiPgjoltKUpWp-heaigMd5Ix5mI1671CdAE",
+			{
+				description: `**${username}** redeemed **${
+					reward.title
+				}** for ${reward.cost}\n${
+					userInput
+						? `\`\`\`\n${userInput}\n\`\`\`
+					`
+						: ""
+				}`,
+				message: timestampedURL,
+				author: username,
+				author_url: profileURL,
+			}
 		);
 	} catch (error) {
-		console.error("Error in textToSpeech:", error);
+		console.error("Error:", error);
 	}
 });
 

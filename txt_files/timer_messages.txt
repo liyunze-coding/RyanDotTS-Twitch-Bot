@@ -9,3 +9,5 @@ Have a hard time focusing on your tasks? Use "!focus <number>" to focus on a sin
 Not feeling focused enough with the ASMR audio? Play your preferred music over it!
 Hello! I'm Ryan from Malaysia, studying my Bachelor's of Computer Science degree in Australia. I do co-working & study streams featuring my multi-task widget! I previously interned as a frontend web dev. !taskhelp !website !socials
 Want to collaborate? Sponsor me? Have a question? Feel free to reach out to me via email at https://rython.dev/contact/ !
+
+If you want to sub from mobile without the inflated prices, use this link -> https://twitch.tv/subs/rythondev

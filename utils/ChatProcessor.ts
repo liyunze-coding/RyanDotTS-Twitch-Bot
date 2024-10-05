@@ -10,7 +10,8 @@ import {
 	editCommand,
 } from "./Commands";
 import { lookUpDefinition } from "./Define";
-import { convert } from "./Convert";
+import { sendMessageWebHook, sendEmbedWebHook } from "./DiscordWebHook";
+// import { convert } from "./Convert";
 import type { jsonFilename, textFilename } from "./Commands";
 
 const WEBHOOK_URL = Bun.env.WEBHOOK_URL ?? "";
@@ -23,20 +24,6 @@ let messageCount: number = 0;
 let lastMessageTimestamp: number = Date.now();
 const CHAT_MESSAGE_COUNT = 5;
 const TIME_SINCE_LAST_MESSAGE = 5 * 60 * 1000;
-
-async function sendWebHook(url: string, data: any) {
-	const form = new FormData();
-
-	form.append("payload_json", JSON.stringify(data));
-
-	try {
-		await axios.post(url, form, {
-			headers: form.getHeaders(),
-		});
-	} catch (error) {
-		console.error("Error sending webhook:", error);
-	}
-}
 
 export async function processCommand(
 	user: string,
@@ -96,12 +83,10 @@ export async function processCommand(
 		let quote = await getQuote();
 		await sendChatResponse(quote, source, msgId);
 	} else if (command === "promote" && flags.broadcaster) {
-		let content_of_promotion = `<@&1038436118816903210> \n# <https://www.twitch.tv/RythonDev>\n${message}`;
+		let content_of_promotion = `<@&1038436118816903210> \nhttps://rython.dev/live\n${message}`;
 
 		// Send a webhook to promote the channel
-		await sendWebHook(WEBHOOK_URL, {
-			content: content_of_promotion,
-		});
+		await sendMessageWebHook(WEBHOOK_URL, content_of_promotion);
 
 		await sendChatResponse(`Promotion successful!`, source, msgId);
 	} else if (
