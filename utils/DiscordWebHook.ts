@@ -64,7 +64,3 @@ export async function sendEmbedWebHook(url: string, webhookData: webhookData) {
 			return error;
 		});
 }
-
-// await sendEmbedWebHook(
-// 	"https://discord.com/api/webhooks/1065413606080004217/S6M4YsBJZugNERrkZ8OWpuGj-Oee1NTHNUiPgjoltKUpWp-heaigMd5Ix5mI1671CdAE"
-// );

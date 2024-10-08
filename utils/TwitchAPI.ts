@@ -54,7 +54,7 @@ function convertSecondsToHMS(seconds: number) {
 	return `${hours}h${minutes}m${secondsRemainder}s`;
 }
 
-export async function getVODTimestamp(broadcasterID: string) {
+export async function getVODTimestamp(broadcasterID: string = "248474026") {
 	try {
 		const response = await axios.get(
 			`https://api.twitch.tv/helix/videos?user_id=${broadcasterID}`,

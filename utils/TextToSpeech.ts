@@ -1,11 +1,12 @@
 import { exec } from "child_process";
+import { client } from "./SBClient";
 
 // Function to escape single quotes for PowerShell
 function escapeTextForPowershell(text: string): string {
 	return text.replace(/'/g, "''");
 }
 
-export default async function textToSpeech(message: string) {
+export async function textToSpeechPrivate(message: string) {
 	// Escape any single quotes in the text for PowerShell
 	const escapedText = escapeTextForPowershell(message);
 
@@ -23,5 +24,11 @@ export default async function textToSpeech(message: string) {
 			return;
 		}
 		// console.log("Text-to-speech complete.");
+	});
+}
+
+export async function textToSpeechPublic(message: string) {
+	client.doAction("140817ef-16c6-4c63-a269-492d382597b9", {
+		text: message,
 	});
 }

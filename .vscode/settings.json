@@ -3,7 +3,7 @@
 		"editor.defaultFormatter": "ms-python.black-formatter"
 	},
 	"files.exclude": {
-		".env": false
+		".env": true
 	},
 	"python.formatting.provider": "none"
 }

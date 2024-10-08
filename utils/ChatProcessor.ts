@@ -1,5 +1,3 @@
-import axios from "axios";
-import FormData from "form-data";
 import { client } from "./SBClient";
 import {
 	getCommands,
@@ -9,12 +7,14 @@ import {
 	removeCommand,
 	editCommand,
 } from "./Commands";
+
 import { lookUpDefinition } from "./Define";
-import { sendMessageWebHook, sendEmbedWebHook } from "./DiscordWebHook";
-// import { convert } from "./Convert";
+import { sendEmbedWebHook, sendMessageWebHook } from "./DiscordWebHook";
+import { getVODTimestamp } from "./TwitchAPI";
 import type { jsonFilename, textFilename } from "./Commands";
 
-const WEBHOOK_URL = Bun.env.WEBHOOK_URL ?? "";
+const PROMOTION_WH_URL = Bun.env.PROMOTION_WH_URL ?? "";
+const PRIVATE_WH_URL = Bun.env.PRIVATE_WH_URL ?? "";
 
 const MCommandModify: string[] = ["mcmd", "modcommand"];
 const commandModify: string[] = ["command", "cmd", "rcmd"];
@@ -86,7 +86,7 @@ export async function processCommand(
 		let content_of_promotion = `<@&1038436118816903210> \nhttps://rython.dev/live\n${message}`;
 
 		// Send a webhook to promote the channel
-		await sendMessageWebHook(WEBHOOK_URL, content_of_promotion);
+		await sendMessageWebHook(PROMOTION_WH_URL, content_of_promotion);
 
 		await sendChatResponse(`Promotion successful!`, source, msgId);
 	} else if (
@@ -209,7 +209,19 @@ export async function processCommand(
 		lookUpDefinition(word).then(async (definition) => {
 			await sendChatResponse(definition, source, msgId);
 		});
-	} /*else if (["convert"].includes(command)) {
+	} else if (["timestamp"].includes(command)) {
+		let description = "";
+		if (message) description = message;
+
+		let timestamp = await getVODTimestamp();
+
+		await sendMessageWebHook(
+			PRIVATE_WH_URL,
+			`${timestamp}\n${description}`
+		);
+	}
+
+	/*else if (["convert"].includes(command)) {
 		let response = "";
 		if (message.includes("->")) {
 			let breakdownMessage = message.split("->");

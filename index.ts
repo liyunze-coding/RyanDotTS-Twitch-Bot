@@ -1,10 +1,121 @@
 import { client } from "./utils/SBClient";
-import textToSpeech from "./utils/TextToSpeech";
+import { textToSpeechPrivate, textToSpeechPublic } from "./utils/TextToSpeech";
 import { processChat, processCommand } from "./utils/ChatProcessor";
 import { sendEmbedWebHook } from "./utils/DiscordWebHook";
 import { getProfileURL, getVODTimestamp } from "./utils/TwitchAPI";
 
-client.on("Twitch.RewardRedemption", async (data: any) => {
+const CHANNEL_REWARD_WH_URL = Bun.env.CHANNEL_REWARD_WH_URL ?? "";
+
+async function sendEmbedWebHookToDiscord(
+	timestampedURL: string,
+	username: string,
+	profileURL: string,
+	description: string
+) {
+	await sendEmbedWebHook(CHANNEL_REWARD_WH_URL, {
+		description: description,
+		message: timestampedURL,
+		author: username,
+		author_url: profileURL,
+	});
+}
+
+client.on("Twitch.Follow", async (data) => {
+	let username = data.data.user_name;
+
+	await textToSpeechPrivate(`${username} has followed`);
+});
+
+client.on("Twitch.Sub", async (data) => {
+	let username = data.data.userName;
+	let timestampedURL = await getVODTimestamp();
+	let profileURL = await getProfileURL(data.data.userId);
+
+	await textToSpeechPrivate(`${username} has subscribed`);
+
+	await sendEmbedWebHookToDiscord(
+		timestampedURL,
+		username,
+		profileURL,
+		`${username} has subscribed!`
+	);
+});
+
+client.on("Twitch.ReSub", async (data) => {
+	let username = data.data.userName;
+	let months = data.data.cumulativeMonths;
+	let timestampedURL = await getVODTimestamp();
+	let profileURL = await getProfileURL(data.data.userId);
+
+	await textToSpeechPrivate(
+		`${username} has subscribed for ${months} months`
+	);
+
+	await sendEmbedWebHookToDiscord(
+		timestampedURL,
+		username,
+		profileURL,
+		`${username} has subscribed for ${months} months!`
+	);
+});
+
+client.on("Twitch.GiftSub", async (data) => {
+	let username = data.data.isAnonymous
+		? "An anonymous gifter"
+		: data.data.userName;
+	let recipient = data.data.recipientDisplayName;
+	let timestampedURL = await getVODTimestamp();
+	let profileURL = await getProfileURL(data.data.userId);
+
+	await textToSpeechPrivate(`${username} has gifted a sub to ${recipient}`);
+
+	await sendEmbedWebHookToDiscord(
+		timestampedURL,
+		username,
+		profileURL,
+		`${username} has gifted a sub to ${recipient}!`
+	);
+});
+
+client.on("Twitch.GiftBomb", async (data: any) => {
+	let username = data.data.isAnonymous
+		? "An anonymous gifter"
+		: data.data.userName;
+	let giftCount = data.data.gifts;
+	let timestampedURL = await getVODTimestamp();
+	let profileURL = await getProfileURL(data.data.userId);
+
+	await textToSpeechPrivate(
+		`${username} has gifted ${giftCount} subs to the community`
+	);
+
+	await sendEmbedWebHookToDiscord(
+		timestampedURL,
+		username,
+		profileURL,
+		`${username} has gifted ${giftCount} subs to the community!`
+	);
+});
+
+client.on("Twitch.Raid", async (data) => {
+	let raidingStreamer = data.data.from_broadcaster_user_name;
+	let viewerCount = data.data.viewers;
+	let timestampedURL = await getVODTimestamp();
+	let profileURL = await getProfileURL(data.data.from_broadcaster_user_id);
+
+	await textToSpeechPrivate(
+		`${raidingStreamer} has raided with ${viewerCount} viewers`
+	);
+
+	await sendEmbedWebHookToDiscord(
+		timestampedURL,
+		raidingStreamer,
+		profileURL,
+		`${raidingStreamer} has raided with ${viewerCount} viewers!`
+	);
+});
+
+client.on("Twitch.RewardRedemption", async (data) => {
 	try {
 		let username = data.data.user_name;
 		let reward = data.data.reward;
@@ -18,39 +129,35 @@ client.on("Twitch.RewardRedemption", async (data: any) => {
 		}
 
 		// Check if it's the other TTS reward
-		if (reward.id !== "8dc5018c-039d-4ec9-b818-6c8eaaa5a7a1") {
+		if (reward.id !== "dc57e7d7-738e-4396-a945-e4769006e4ae") {
 			// Send TTS message to broadcaster only
-			await textToSpeech(response);
+			await textToSpeechPrivate(response);
+		} else {
+			await textToSpeechPublic(`New TTS from ${username}. ${userInput}`);
 		}
 
 		// Send message to Discord with VOD Timestamp
-		let timestampedURL = await getVODTimestamp("248474026");
-		console.log(timestampedURL);
+		let timestampedURL = await getVODTimestamp();
 
 		let profileURL = await getProfileURL(data.data.user_id);
 
-		await sendEmbedWebHook(
-			"https://discord.com/api/webhooks/1065413606080004217/S6M4YsBJZugNERrkZ8OWpuGj-Oee1NTHNUiPgjoltKUpWp-heaigMd5Ix5mI1671CdAE",
-			{
-				description: `**${username}** redeemed **${
-					reward.title
-				}** for ${reward.cost}\n${
-					userInput
-						? `\`\`\`\n${userInput}\n\`\`\`
+		await sendEmbedWebHookToDiscord(
+			timestampedURL,
+			username,
+			profileURL,
+			`**${username}** redeemed **${reward.title}** for ${reward.cost}\n${
+				userInput
+					? `\`\`\`\n${userInput}\n\`\`\`
 					`
-						: ""
-				}`,
-				message: timestampedURL,
-				author: username,
-				author_url: profileURL,
-			}
+					: ""
+			}`
 		);
 	} catch (error) {
 		console.error("Error:", error);
 	}
 });
 
-client.on("Twitch.ChatMessage", async (data: any) => {
+client.on("Twitch.ChatMessage", async (data) => {
 	const payload = data.data;
 	const source = data.event.source.toLowerCase();
 	const user = payload.message.displayName;
@@ -86,7 +193,7 @@ client.on("Twitch.ChatMessage", async (data: any) => {
 	await processCommand(user, command, message, flags, source, msgId);
 });
 
-client.on("YouTube.Message", async (data: any) => {
+client.on("YouTube.Message", async (data) => {
 	const payload = data.data;
 	const source = data.event.source.toLowerCase();
 	const user = payload.user.name;
