@@ -7,6 +7,8 @@ type ChatCountType = {
 	[key: string]: number;
 };
 
+const NUMBER_OF_CHATS_BEFORE_SHOUTOUT = 5; // 6 times
+
 let chatCount: ChatCountType = {};
 
 export async function processAutoShoutout(username: string) {
@@ -17,17 +19,16 @@ export async function processAutoShoutout(username: string) {
 			chatCount[username] = 0;
 		}
 
-		// 2 = 3 - 1
-		if (chatCount[username] < 2) {
+		if (chatCount[username] < NUMBER_OF_CHATS_BEFORE_SHOUTOUT) {
 			chatCount[username]++;
-		} else if (chatCount[username] == 2) {
+		} else if (chatCount[username] == NUMBER_OF_CHATS_BEFORE_SHOUTOUT) {
 			// Do shoutout
 			chatCount[username]++;
 
 			if (username === "studyyoulazy") {
 				await sendChatResponse(`!lazy`, "Twitch");
 			} else {
-				await sendChatResponse(`!so ${username}`, "Twitch");
+				await sendChatResponse(`!so @${username}`, "Twitch");
 			}
 		}
 	}

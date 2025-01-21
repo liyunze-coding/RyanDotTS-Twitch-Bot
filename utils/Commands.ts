@@ -30,7 +30,11 @@ export function addScore(
 	key: string,
 	value: number
 ) {
-	if (!scores[username] || !scores[username][key]) {
+	if (
+		!scores[username] ||
+		!scores[username][key] ||
+		scores[username][key] == undefined
+	) {
 		scores[username] = { [key]: 0 };
 	}
 

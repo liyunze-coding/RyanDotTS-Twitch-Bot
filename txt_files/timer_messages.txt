@@ -1,5 +1,5 @@
 Thanks for dropping by! If Ryan isn't responding, that means that he's super focused and will respond to you when it's break time! 
-Join the Discord server! https://discord.gg/UnHyHkhbga
+Join the Discord server! https://rython.dev/discord/
 Add your task to our list with "!taskadd <your task>". It's a simple way to feel more connected and stay on track during our coworking sessions.
 Did you know that if you connect your Amazon Prime account with your Twitch account, you get one FREE sub per month? Link your accounts here: https://gaming.amazon.com/links/twitch/manage
 Saw a funny moment on stream? Clip it! You can use !clip to capture the moment and share it with the community <3
@@ -11,4 +11,4 @@ Hello! I'm Ryan from Malaysia, studying my Bachelor's of Computer Science degree
 Want to collaborate? Sponsor me? Have a question? Feel free to reach out to me via email at https://rython.dev/contact/ !
 If you want to sub from mobile without the inflated prices, use this link -> https://twitch.tv/subs/rythondev
 Noticed that some rewards disappeared? Don't worry, they'll be re-enabled during break time!
-Don't ask to ask. Just ask. If it's too much, I'll just say "I won't answer that question" and give you a reason
+Don't ask to ask. Just ask. If it's too much, I'll just say "I won't answer that question" and give you a valid reason

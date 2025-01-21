@@ -14,7 +14,14 @@ import { addToShoutout, processAutoShoutout } from "./AutoShoutout";
 import { lookUpDefinition } from "./Define";
 import { sendEmbedWebHook, sendMessageWebHook } from "./DiscordWebHook";
 import { getVODTimestamp, checkUserExists } from "./TwitchAPI";
-import { convert } from "./Convert";
+import {
+	roundTo,
+	convertLength,
+	convertSpeed,
+	convertTemperature,
+	convertVolume,
+	isNumeric,
+} from "./Convert";
 import type { jsonFilename, textFilename } from "./Commands";
 import { postToBsky } from "./Bsky";
 
@@ -252,14 +259,54 @@ export async function processCommand(
 				source
 			);
 		}
-	} else if (["convert"].includes(command)) {
+	} else if (["ftoc", "ctof", "fttocm", "cmtoft"].includes(command)) {
 		let response = "";
-		if (message.includes("->")) {
-			let breakdownMessage = message.split("->");
-			let toUnit = breakdownMessage[1];
-			let fromMeasurement = breakdownMessage[0];
 
-			response = convert(fromMeasurement, toUnit);
+		switch (command) {
+			case "ftoc":
+				let fahrenheit = parseFloat(message);
+				if (isNumeric(message)) {
+					let celsius = convertTemperature(fahrenheit, "F", "C");
+					response = `${fahrenheit}°F is ${celsius}°C`;
+				} else {
+					response = `Please provide a valid number`;
+				}
+				break;
+			case "ctof":
+				let celsius = parseFloat(message);
+				if (isNumeric(message)) {
+					let fahrenheit = convertTemperature(celsius, "C", "F");
+					response = `${celsius}°C is ${fahrenheit}°F`;
+				} else {
+					response = `Please provide a valid number`;
+				}
+				break;
+			case "fttocm":
+				// sometimes in the format of 5'11, 5'11", or 5 11
+				const [feet, inches] = message
+					.replace(/["']/g, "")
+					.split(" ")
+					.map(parseFloat);
+
+				if (feet && inches) {
+					let cm = convertLength(feet * 12 + inches, "ft", "cm");
+					response = `${feet}'${inches}" is ${cm}cm`;
+				} else {
+					response = `Please provide a valid format: 5'11" or 5 11`;
+				}
+				break;
+			case "cmtoft":
+				let cm = parseFloat(message);
+				if (isNumeric(message)) {
+					let feetInches = convertLength(cm, "cm", "ft+in");
+					response = `${cm}cm is ${feetInches}`;
+				} else {
+					response = `Please provide a valid number`;
+				}
+				break;
+			default:
+				// handle other commands or default case
+				break;
 		}
 
 		await sendChatResponse(response, source, msgId);
@@ -325,6 +372,8 @@ function todayDate() {
 }
 
 export async function processCheckIn(username: string) {
+	if (true) return;
+	username = username.toLowerCase();
 	let scores = await getScores("checkIn");
 
 	const today = todayDate();
@@ -347,8 +396,8 @@ export async function processCheckIn(username: string) {
 
 	if (!scores["_today"].first) {
 		scores["_today"].first = username;
-		scores = addScore(scores, username, "first", 1);
-		scores = addScore(scores, username, "checkedIn", 1);
+		scores = await addScore(scores, username, "first", 1);
+		scores = await addScore(scores, username, "checkedIn", 1);
 
 		let userScore = scores[username].first;
 
@@ -357,7 +406,7 @@ export async function processCheckIn(username: string) {
 			"twitch"
 		);
 	} else {
-		scores = addScore(scores, username, "checkedIn", 1);
+		scores = await addScore(scores, username, "checkedIn", 1);
 
 		let userScore = scores[username].checkedIn;
 

@@ -46,10 +46,14 @@ async function queueingPrivateTTS(message: string) {
 }
 
 async function queueingPublicTTS(message: string) {
-	publicTTSQueue.push(message);
-}
+	if (textToSpeechOccupied) {
+		publicTTSQueue.push(message);
+	}
 
-async function playPublicTTSQueue() {
+	textToSpeechOccupied = true;
+	await textToSpeechPrivate(message);
+	textToSpeechOccupied = false;
+
 	if (publicTTSQueue.length > 0) {
 		let TTS_msg = publicTTSQueue.shift() ?? "";
 
@@ -57,9 +61,7 @@ async function playPublicTTSQueue() {
 			return;
 		}
 
-		await textToSpeechPublic(TTS_msg);
-	} else {
-		await textToSpeechPrivate("No TTS in Queue");
+		await queueingPrivateTTS(TTS_msg);
 	}
 }
 
@@ -104,15 +106,15 @@ async function sendEmbedWebHookToDiscord(
 	}
 }
 
-client.on("Twitch.Follow", async (data) => {
-	let username = data.data.user_name;
+// client.on("Twitch.Follow", async (data) => {
+// let username = data.data.user_name;
 
-	await queueingPrivateTTS(`${username} has followed`);
-	await sendChatResponse("Thanks for the follow!", "twitch");
-});
+// await queueingPrivateTTS(`${username} has followed`);
+// await sendChatResponse(`${username} has followed`, "twitch");
+// });
 
 client.on("Twitch.Sub", async (data) => {
-	let username = data.data.userName;
+	let username = data.data.displayName;
 	let timestampedURL = await getVODTimestamp();
 	let profileURL = await getProfileURL(data.data.userId);
 
@@ -129,7 +131,7 @@ client.on("Twitch.Sub", async (data) => {
 });
 
 client.on("Twitch.ReSub", async (data) => {
-	let username = data.data.userName;
+	let username = data.data.displayName;
 	let months = data.data.cumulativeMonths;
 	let timestampedURL = await getVODTimestamp();
 	let profileURL = await getProfileURL(data.data.userId);
@@ -325,10 +327,4 @@ client.on("YouTube.Message", async (data) => {
 	};
 
 	await processCommand(user, command, message, flags, source);
-});
-
-client.on("General.Custom", async (data: any) => {
-	if (data && data.data.custom && data.data.custom == "playTTS") {
-		await playPublicTTSQueue();
-	}
 });

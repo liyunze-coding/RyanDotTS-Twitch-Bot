@@ -23,7 +23,6 @@ export async function textToSpeechPrivate(message: string) {
 			console.error(`stderr: ${stderr}`);
 			return;
 		}
-		// console.log("Text-to-speech complete.");
 	});
 }
 
