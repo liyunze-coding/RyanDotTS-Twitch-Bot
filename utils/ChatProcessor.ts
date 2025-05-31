@@ -10,7 +10,7 @@ import {
 	addScore,
 	saveScore,
 } from "./Commands";
-import { addToShoutout, processAutoShoutout } from "./AutoShoutout";
+import { addToShoutout, processAutoShoutout, onShoutout } from "./AutoShoutout";
 import { lookUpDefinition } from "./Define";
 import { sendEmbedWebHook, sendMessageWebHook } from "./DiscordWebHook";
 import { getVODTimestamp, checkUserExists } from "./TwitchAPI";
@@ -33,6 +33,7 @@ const BOTS = [
 	"kofistreambot",
 	"streamelements",
 	"songlistbot",
+	"task_daddy",
 ];
 
 const PROMOTION_WH_URL = Bun.env.PROMOTION_WH_URL ?? "";
@@ -105,7 +106,7 @@ export async function processCommand(
 		let quote = await getQuote();
 		await sendChatResponse(quote, source, msgId);
 	} else if (command === "promote" && flags.broadcaster) {
-		let content_of_promotion = `<@&1038436118816903210> \nhttps://rython.dev/live\n${message}`;
+		let content_of_promotion = `<@&1038436118816903210> \nhttps://rython.dev/live\n<http://youtube.com/@RythonDev/live>\n\n${message}`;
 
 		// Send a webhook to promote the channel
 		await sendMessageWebHook(PROMOTION_WH_URL, content_of_promotion);
@@ -245,6 +246,7 @@ export async function processCommand(
 		let user = message.startsWith("@") ? message.slice(1) : message;
 
 		if (await checkUserExists(user)) {
+			onShoutout(user);
 			await addToShoutout(user);
 		}
 	} else if (
@@ -259,57 +261,6 @@ export async function processCommand(
 				source
 			);
 		}
-	} else if (["ftoc", "ctof", "fttocm", "cmtoft"].includes(command)) {
-		let response = "";
-
-		switch (command) {
-			case "ftoc":
-				let fahrenheit = parseFloat(message);
-				if (isNumeric(message)) {
-					let celsius = convertTemperature(fahrenheit, "F", "C");
-					response = `${fahrenheit}°F is ${celsius}°C`;
-				} else {
-					response = `Please provide a valid number`;
-				}
-				break;
-			case "ctof":
-				let celsius = parseFloat(message);
-				if (isNumeric(message)) {
-					let fahrenheit = convertTemperature(celsius, "C", "F");
-					response = `${celsius}°C is ${fahrenheit}°F`;
-				} else {
-					response = `Please provide a valid number`;
-				}
-				break;
-			case "fttocm":
-				// sometimes in the format of 5'11, 5'11", or 5 11
-				const [feet, inches] = message
-					.replace(/["']/g, "")
-					.split(" ")
-					.map(parseFloat);
-
-				if (feet && inches) {
-					let cm = convertLength(feet * 12 + inches, "ft", "cm");
-					response = `${feet}'${inches}" is ${cm}cm`;
-				} else {
-					response = `Please provide a valid format: 5'11" or 5 11`;
-				}
-				break;
-			case "cmtoft":
-				let cm = parseFloat(message);
-				if (isNumeric(message)) {
-					let feetInches = convertLength(cm, "cm", "ft+in");
-					response = `${cm}cm is ${feetInches}`;
-				} else {
-					response = `Please provide a valid number`;
-				}
-				break;
-			default:
-				// handle other commands or default case
-				break;
-		}
-
-		await sendChatResponse(response, source, msgId);
 	}
 }
 
@@ -321,7 +272,7 @@ export async function processChat(
 ) {
 	// port from YouTube chat to Twitch chat so I notice them
 	if (source === "youtube" && !BOTS.includes(user)) {
-		sendChatResponse(`${user}: ${message}`, "twitch");
+		// sendChatResponse(`${user}: ${message}`, "twitch");
 	}
 
 	// ignore if it's from YouTube or is a bot

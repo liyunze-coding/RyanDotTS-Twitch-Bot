@@ -7,12 +7,12 @@ type ChatCountType = {
 	[key: string]: number;
 };
 
-const NUMBER_OF_CHATS_BEFORE_SHOUTOUT = 5; // 6 times
+const NUMBER_OF_CHATS_BEFORE_SHOUTOUT = 2; // 3 times
 
 let chatCount: ChatCountType = {};
 
 export async function processAutoShoutout(username: string) {
-	// if streamer is in the list AND has chatted 3 times, then auto shoutout
+	// if streamer is in the list AND has chatted X times, then auto shoutout
 	username = username.toLowerCase();
 	if (STREAMERS.includes(username)) {
 		if (!chatCount[username]) {
@@ -31,6 +31,18 @@ export async function processAutoShoutout(username: string) {
 				await sendChatResponse(`!so @${username}`, "Twitch");
 			}
 		}
+	}
+}
+
+export async function onShoutout(username: string) {
+	// if streamer is in the list, then remove from list
+	username = username.toLowerCase();
+	if (STREAMERS.includes(username)) {
+		if (!chatCount[username]) {
+			chatCount[username] = 0;
+		}
+
+		chatCount[username] += NUMBER_OF_CHATS_BEFORE_SHOUTOUT + 1;
 	}
 }
 

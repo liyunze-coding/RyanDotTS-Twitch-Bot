@@ -59,7 +59,7 @@ export async function sendEmbedWebHook(url: string, webhookData: webhookData) {
 			return response;
 		})
 		.catch((error) => {
-			console.log(error);
+			console.error(error);
 			return error;
 		});
 }

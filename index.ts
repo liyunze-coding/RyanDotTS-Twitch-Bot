@@ -19,51 +19,7 @@ type Webhook = {
 let webhookQueue: Webhook[] = [];
 let webhookOccupied = false;
 
-let textToSpeechOccupied = false;
-let privateTTSQueue: string[] = [];
-let publicTTSQueue: string[] = [];
-
 const CHANNEL_REWARD_WH_URL = Bun.env.CHANNEL_REWARD_WH_URL ?? "";
-
-async function queueingPrivateTTS(message: string) {
-	if (textToSpeechOccupied) {
-		privateTTSQueue.push(message);
-	}
-
-	textToSpeechOccupied = true;
-	await textToSpeechPrivate(message);
-	textToSpeechOccupied = false;
-
-	if (privateTTSQueue.length > 0) {
-		let TTS_msg = privateTTSQueue.shift() ?? "";
-
-		if (!TTS_msg) {
-			return;
-		}
-
-		await queueingPrivateTTS(TTS_msg);
-	}
-}
-
-async function queueingPublicTTS(message: string) {
-	if (textToSpeechOccupied) {
-		publicTTSQueue.push(message);
-	}
-
-	textToSpeechOccupied = true;
-	await textToSpeechPrivate(message);
-	textToSpeechOccupied = false;
-
-	if (publicTTSQueue.length > 0) {
-		let TTS_msg = publicTTSQueue.shift() ?? "";
-
-		if (!TTS_msg) {
-			return;
-		}
-
-		await queueingPrivateTTS(TTS_msg);
-	}
-}
 
 async function sendEmbedWebHookToDiscord(
 	timestampedURL: string,
@@ -120,7 +76,7 @@ client.on("Twitch.Sub", async (data) => {
 
 	await processCheckIn(username);
 
-	await queueingPrivateTTS(`${username} has subscribed`);
+	await textToSpeechPrivate(`${username} has subscribed`);
 
 	await sendEmbedWebHookToDiscord(
 		timestampedURL,
@@ -138,9 +94,9 @@ client.on("Twitch.ReSub", async (data) => {
 
 	await processCheckIn(username);
 
-	textToSpeechOccupied = true;
-	await queueingPrivateTTS(`${username} has subscribed for ${months} months`);
-	textToSpeechOccupied = false;
+	await textToSpeechPrivate(
+		`${username} has subscribed for ${months} months`
+	);
 
 	await sendEmbedWebHookToDiscord(
 		timestampedURL,
@@ -160,7 +116,7 @@ client.on("Twitch.GiftSub", async (data) => {
 
 	await processCheckIn(username);
 
-	await queueingPrivateTTS(`${username} has gifted a sub to ${recipient}`);
+	await textToSpeechPrivate(`${username} has gifted a sub to ${recipient}`);
 
 	await sendEmbedWebHookToDiscord(
 		timestampedURL,
@@ -178,7 +134,7 @@ client.on("Twitch.GiftBomb", async (data: any) => {
 	let timestampedURL = await getVODTimestamp();
 	let profileURL = await getProfileURL(data.data.userId);
 
-	await queueingPrivateTTS(
+	await textToSpeechPrivate(
 		`**${username}** has gifted **${giftCount} subs** to the community`
 	);
 
@@ -196,7 +152,7 @@ client.on("Twitch.Raid", async (data) => {
 	let timestampedURL = await getVODTimestamp();
 	let profileURL = await getProfileURL(data.data.from_broadcaster_user_id);
 
-	await queueingPrivateTTS(
+	await textToSpeechPrivate(
 		`${raidingStreamer} has raided with ${viewerCount} viewers`
 	);
 
@@ -227,10 +183,10 @@ client.on("Twitch.RewardRedemption", async (data) => {
 		// Check if it's the other TTS reward
 		if (reward.id !== "dc57e7d7-738e-4396-a945-e4769006e4ae") {
 			// Send TTS message to broadcaster only
-			await queueingPrivateTTS(response);
+			await textToSpeechPrivate(response);
 		} else {
 			// Send TTS via Speaker Bot
-			await queueingPublicTTS(`${username} says. ${userInput}`);
+			await textToSpeechPublic(`${username} says. ${userInput}`);
 		}
 
 		// Send message to Discord with VOD Timestamp
